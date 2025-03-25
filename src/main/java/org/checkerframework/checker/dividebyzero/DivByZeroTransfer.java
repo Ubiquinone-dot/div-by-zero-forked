@@ -74,31 +74,143 @@ public class DivByZeroTransfer extends CFTransfer {
    * @param rhs the lattice point for the right-hand side of the comparison expression
    * @return a refined type for lhs
    */
-  private AnnotationMirror refineLhsOfComparison(
-      Comparison operator, AnnotationMirror lhs, AnnotationMirror rhs) {
-    // TODO
-    return lhs;
-  }
-
-  /**
-   * For an arithmetic expression (lhs `op` rhs), compute the point in the lattice for the result of
-   * evaluating the expression. ("Top" is always a legal return value, but not a very useful one.)
-   *
-   * <p>For example,
-   *
-   * <pre>x = 1 + 0</pre>
-   *
-   * should cause us to conclude that "x is not zero".
-   *
-   * @param operator a binary operator
-   * @param lhs the lattice point for the left-hand side of the expression
-   * @param rhs the lattice point for the right-hand side of the expression
-   * @return the lattice point for the result of the expression
-   */
+  
   private AnnotationMirror arithmeticTransfer(
       BinaryOperator operator, AnnotationMirror lhs, AnnotationMirror rhs) {
     // TODO
-    return top();
+    if (operator.equals(BinaryOperator.PLUS)) {
+      if (equal(lhs, reflect(Zero.class))) {
+        return rhs;
+      }
+      if (equal(rhs, reflect(Zero.class))) {
+        return lhs;
+      }
+      if (equal(lhs, reflect(Positive.class)) && equal(rhs, reflect(Positive.class))) {
+        return reflect(Positive.class);
+      }
+      if (equal(lhs, reflect(Negative.class)) && equal(rhs, reflect(Negative.class))) {
+        return reflect(Negative.class);
+      }
+      if ((equal(lhs, reflect(Positive.class)) && equal(rhs, reflect(NotNegative.class))) ||
+          (equal(lhs, reflect(NotNegative.class)) && equal(rhs, reflect(Positive.class)))) {
+            return reflect(Positive.class);
+          }
+      if ((equal(lhs, reflect(Negative.class)) && equal(rhs, reflect(NotPositive.class))) ||
+          (equal(lhs, reflect(NotPositive.class)) && equal(rhs, reflect(Negative.class)))) {
+            return reflect(Negative.class);
+          }
+      if (equal(lhs, reflect(NotNegative.class)) && equal(rhs, reflect(NotNegative.class))) {
+        return reflect(NotNegative.class);
+      }
+      if (equal(lhs, reflect(NotPositive.class)) && equal(rhs, reflect(NotPositive.class))) {
+        return reflect(NotPositive.class);
+      }
+      return top(); // Return top if no other case matches
+    }
+    if (operator.equals(BinaryOperator.MINUS)) {
+      if (equal(rhs, reflect(Zero.class))) {
+        return lhs;
+      }
+      if (equal(lhs, reflect(Zero.class)) && equal(rhs, reflect(Positive.class))) {
+        return reflect(Negative.class);
+      }
+      if (equal(lhs, reflect(Zero.class)) && equal(rhs, reflect(Negative.class))) {
+        return reflect(Positive.class);
+      }
+      if (equal(lhs, reflect(Zero.class)) && equal(rhs, reflect(NotPositive.class))) {
+        return reflect(NotNegative.class);
+      }
+      if (equal(lhs, reflect(Zero.class)) && equal(rhs, reflect(NotNegative.class))) {
+        return reflect(NotPositive.class);
+      }
+      if (equal(lhs, reflect(NotNegative.class)) && equal(rhs, reflect(NotPositive.class))) {
+        return reflect(NotNegative.class);
+      }
+      if (equal(lhs, reflect(NotPositive.class)) && equal(rhs, reflect(NotNegative.class))) {
+        return reflect(NotPositive.class);
+      }
+      if (equal(lhs, reflect(Negative.class)) && equal(rhs, reflect(Positive.class))) {
+        return reflect(Negative.class);
+      }
+      if (equal(lhs, reflect(Positive.class)) && equal(rhs, reflect(Negative.class))) {
+        return reflect(Positive.class);
+      }
+      return top();
+    }
+    if (operator.equals(BinaryOperator.TIMES)) {
+      if (equal(lhs, reflect(Zero.class)) || equal(rhs, reflect(Zero.class))) {
+        return reflect(Zero.class);
+      }
+      if (equal(lhs, reflect(Positive.class)) && equal(rhs, reflect(Positive.class))) {
+        return reflect(Positive.class);
+      }
+      if (equal(lhs, reflect(Negative.class)) && equal(rhs, reflect(Negative.class))) {
+        return reflect(Positive.class);
+      }
+      if ((equal(lhs, reflect(Positive.class)) && equal(rhs, reflect(Negative.class))) ||
+          (equal(lhs, reflect(Negative.class)) && equal(rhs, reflect(Positive.class)))) {
+            return reflect(Negative.class);
+          }
+      if (equal(lhs, reflect(NotNegative.class)) && equal(rhs, reflect(NotNegative.class))) {
+        return reflect(NotNegative.class);
+      }
+      if (equal(lhs, reflect(NotPositive.class)) && equal(rhs, reflect(NotPositive.class))) {
+        return reflect(NotNegative.class);
+      }
+      if ((equal(lhs, reflect(NotNegative.class)) && equal(rhs, reflect(NotPositive.class))) ||
+          (equal(lhs, reflect(NotPositive.class)) && equal(rhs, reflect(NotNegative.class)))) {
+            return reflect(NotPositive.class);
+          }
+      return top();
+    }
+    if (operator.equals(BinaryOperator.MOD)) {
+      if (equal(rhs, reflect(Zero.class))) {
+        return top();
+      }
+      if (equal(lhs, reflect(Zero.class))) {
+        return reflect(Zero.class);
+      }
+      if (equal(rhs, reflect(Positive.class)) || equal(rhs, reflect(Negative.class))) {
+        return lhs;
+      }
+      if (equal(lhs, reflect(NotNegative.class)) && equal(rhs, reflect(NotNegative.class))) {
+        return reflect(NotNegative.class);
+      }
+      if (equal(lhs, reflect(NotPositive.class)) && equal(rhs, reflect(NotPositive.class))) {
+        return reflect(NotPositive.class);
+      }
+      return top();
+    }
+    if (operator.equals(BinaryOperator.DIVIDE)) {
+      if (equal(rhs, reflect(Zero.class)) || equal(rhs, reflect(NotPositive.class)) || equal(rhs, reflect(NotNegative.class))) {
+        return bottom(); // Program termination
+      }
+      if (equal(lhs, reflect(Zero.class))) {
+        return reflect(Zero.class);
+      }
+      if (equal(lhs, reflect(Positive.class)) && equal(rhs, reflect(Positive.class))) {
+        return reflect(Positive.class);
+      }
+      if (equal(lhs, reflect(Negative.class)) && equal(rhs, reflect(Negative.class))) {
+        return reflect(Positive.class);
+      }
+      if ((equal(lhs, reflect(Positive.class)) && equal(rhs, reflect(Negative.class))) ||
+        (equal(lhs, reflect(Negative.class)) && equal(rhs, reflect(Positive.class)))) {
+          return reflect(Negative.class);
+      }
+      if (equal(lhs, reflect(NotNegative.class)) && equal(rhs, reflect(NotNegative.class))) {
+        return reflect(NotNegative.class);
+      }
+      if (equal(lhs, reflect(NotPositive.class)) && equal(rhs, reflect(NotPositive.class))) {
+        return reflect(NotNegative.class);
+      }
+      if ((equal(lhs, reflect(NotNegative.class)) && equal(rhs, reflect(NotPositive.class))) ||
+        (equal(lhs, reflect(NotPositive.class)) && equal(rhs, reflect(NotNegative.class)))) {
+          return reflect(NotPositive.class);
+      }
+      return top();
+    }
+    return top();  // Other operations are undefined, so return no information
   }
 
   // ========================================================================
